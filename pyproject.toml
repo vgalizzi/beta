@@ -1,0 +1,71 @@
+[project]
+name = "beta"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Victor Galizzi", email = "victor.galizzi@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+beta = "beta:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "mypy>=2.4.0",
+    "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.1",
+]
+
+# --- Ruff : lint + format ---------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]     # aide Ruff à distinguer tes imports des imports tiers
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # erreurs et avertissements pycodestyle
+    "F",        # pyflakes : variables inutilisées, imports morts
+    "I",        # isort : ordre des imports
+    "UP",       # pyupgrade : syntaxe modernisée pour ta version de Python
+    "B",        # bugbear : pièges classiques (argument par défaut mutable, etc.)
+    "SIM",      # simplifications de code
+    "ANN",      # annotations de type manquantes
+    "RUF",      # règles propres à Ruff
+]
+ignore = [
+    "ANN401",   # autorise Any quand il est explicitement voulu
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]   # pas d'annotation exigée sur chaque fonction de test
+
+# --- Mypy : typage strict ---------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true              # active d'un coup une douzaine de vérifications
+warn_unreachable = true    # signale le code mort
+show_error_codes = true    # affiche le code de l'erreur, utile pour cibler un ignore
+# plugins = ["pydantic.mypy"]   # à décommenter quand Pydantic sera installé
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false   # tolérance sur les tests, pas sur le code métier
+
+# --- Pytest -----------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --strict-config --import-mode=importlib"
+markers = [
+    "integration: test nécessitant des services réels (Postgres, stockage objet)",
+]
