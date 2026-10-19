@@ -11,7 +11,7 @@ def test_5():
     ("entrée", "sortie"),
     [
         (0, 1),
-        (-40, -39),  # le point où les deux échelles se croisent
+        (-40, -39),
         (36, 37),
     ],
 )
