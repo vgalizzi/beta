@@ -243,7 +243,121 @@ Each phase is a valid stopping point. After phase 2, the project is already comp
 
 ## Installation
 
-Not available yet.
+Everything runs on Linux. The reference setup is Windows 11 with WSL2 and Ubuntu 24.04, because that is the machine the project is developed on. On a native Linux machine, skip the WSL step; the rest is identical.
+
+The steps below install a development environment. Running the application stack with `docker compose up` comes with phase 0 and will be documented here.
+
+### Prerequisites
+
+| Component | Version | Notes |
+|---|---|---|
+| Windows | 11, with WSL2 | WSL1 has no real Linux kernel and cannot run Docker |
+| Ubuntu | 24.04 under WSL2 | Other recent distributions should work, untested |
+| Docker Engine | with the Compose v2 plugin | Docker Desktop is not needed |
+| uv | 0.13 | Installs Python 3.12 and every dependency |
+| NVIDIA GPU | optional, needed from phase 1 | Windows driver only, see below |
+| Disk space | about 25 GB for the data | *The Way Up* alone is 21 GB, needed from phase 2 |
+
+### 1. WSL2 (Windows only)
+
+Check that the distribution runs under WSL2 (`wsl --list --verbose` in PowerShell, `VERSION` column).
+
+Enable systemd, which Docker Engine relies on, in `/etc/wsl.conf` inside the distribution:
+
+```ini
+[boot]
+systemd=true
+```
+
+Limit the resources of the WSL virtual machine in `%USERPROFILE%\.wslconfig` on the Windows side. By default it may take half of the RAM and give it back poorly:
+
+```ini
+[wsl2]
+memory=12GB        # total RAM minus at least 8 GB for Windows
+processors=8       # logical cores minus 2 to 4
+
+[experimental]
+autoMemoryReclaim=gradual
+```
+
+Apply with `wsl --shutdown`, then reopen a terminal. `systemctl is-system-running` should answer `running` or `degraded`, not `offline`.
+
+### 2. Docker Engine
+
+Install Docker Engine inside the distribution by following the official guide, [Install Docker Engine on Ubuntu](https://docs.docker.com/engine/install/ubuntu/), with the `docker-ce` packages from Docker's repository rather than Ubuntu's `docker.io`, which lags behind. Then:
+
+```bash
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER      # takes effect at the next session
+```
+
+If Docker Desktop is also installed, disable its WSL integration for this distribution: two Docker daemons on the same distribution conflict. `docker info` must not mention Docker Desktop.
+
+Membership in the `docker` group is equivalent to root access on the machine. That is acceptable on a personal workstation, not on a shared server.
+
+### 3. GPU (optional)
+
+Under WSL2, the GPU is exposed by the **Windows** NVIDIA driver. Never install an NVIDIA driver inside the distribution: it breaks the mechanism. `which nvidia-smi` must answer `/usr/lib/wsl/lib/nvidia-smi`.
+
+Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), then register it with Docker:
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+docker run --rm --gpus all nvidia/cuda:<version>-base-ubuntu24.04 nvidia-smi
+```
+
+Pick a CUDA version for the image that is lower than or equal to the `CUDA Version` shown by `nvidia-smi` on the host.
+
+### 4. The repository
+
+Clone the repository **on the Linux file system**, never under `/mnt/c` or another Windows drive. Through `/mnt`, every file access crosses a translation layer: installs and tests become an order of magnitude slower, every file shows up as executable, and file watching is unreliable. [ADR 0001](docs/decisions/0001-depot-wsl-atelier-windows.md) gives the details.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+mkdir -p ~/dev && cd ~/dev
+git clone https://github.com/vgalizzi/beta.git
+cd beta
+uv python install 3.12
+uv sync                            # creates .venv from uv.lock
+uv run pre-commit install          # lint and format checks before each commit
+cp .env.example .env
+```
+
+`uv sync` installs the exact versions recorded in `uv.lock`, the same on every machine, in CI and in the containers. `uv run <command>` runs inside the project environment with no manual activation.
+
+### 5. Data
+
+Datasets and model weights live outside the repository. The code finds them through a single variable, `BETA_DATA_ROOT`, set in `.env`. It can point anywhere, including a Windows drive (`/mnt/v/...`): data is read in bulk, not file by file, so the `/mnt` slowdown matters much less there.
+
+The repository only versions manifests: for each dataset, the list of its files with their checksums. The bytes stay in the data root.
+
+*The Way Up*, used for evaluation from phase 2 on, is available on [Zenodo](https://zenodo.org/records/15196867). Keep the archive as downloaded under `$BETA_DATA_ROOT/raw/the-way-up/`.
+
+### 6. Check
+
+```bash
+uv run ruff check . && uv run ruff format --check .
+uv run mypy src
+uv run pytest -m "not integration"
+docker run --rm hello-world        # without sudo
+```
+
+All four must pass.
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| `System has not been booted with systemd` | `/etc/wsl.conf` malformed, or `wsl --shutdown` not run |
+| `.wslconfig` has no effect | File saved as `.wslconfig.txt`, or a key in the wrong section |
+| `permission denied` on the Docker socket | `docker` group not active yet: close every terminal, `wsl --shutdown`, reopen |
+| `docker info` mentions Docker Desktop | Docker Desktop's WSL integration is still enabled |
+| `nvidia-smi` works on the host but not in a container | `nvidia-ctk runtime configure` not run, or Docker not restarted |
+| A `nvidia/cuda` image fails on the driver version | Image built for a newer CUDA than the host driver supports |
+| Installs and tests are abnormally slow | The repository is under `/mnt/` |
+| Git reports every file as modified, mode `100755` | Files copied from a Windows drive with their permissions: use `cp --no-preserve=mode` |
+| `/bin/sh^M: bad interpreter` | Windows line endings: `.gitattributes` enforces LF, run `git add --renormalize .` |
 
 ## References
 
