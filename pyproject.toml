@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.116",
     "fastapi>=0.157.0",
+    "pydantic-settings>=2.16.1",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -29,46 +30,46 @@ dev = [
     "ruff>=0.17.1",
 ]
 
-# --- Ruff : lint + format ---------------------------------------------------
+# --- Ruff: lint + format ----------------------------------------------------
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests"]     # aide Ruff à distinguer tes imports des imports tiers
+src = ["src", "tests"]     # lets Ruff tell first-party imports from third-party ones
 
 [tool.ruff.lint]
 select = [
-    "E", "W",   # erreurs et avertissements pycodestyle
-    "F",        # pyflakes : variables inutilisées, imports morts
-    "I",        # isort : ordre des imports
-    "UP",       # pyupgrade : syntaxe modernisée pour ta version de Python
-    "B",        # bugbear : pièges classiques (argument par défaut mutable, etc.)
-    "SIM",      # simplifications de code
-    "ANN",      # annotations de type manquantes
-    "RUF",      # règles propres à Ruff
+    "E", "W",   # pycodestyle errors and warnings
+    "F",        # pyflakes: unused variables, dead imports
+    "I",        # isort: import order
+    "UP",       # pyupgrade: modern syntax for the target Python version
+    "B",        # bugbear: classic pitfalls (mutable default argument, etc.)
+    "SIM",      # code simplifications
+    "ANN",      # missing type annotations
+    "RUF",      # Ruff-specific rules
 ]
 ignore = [
-    "ANN401",   # autorise Any quand il est explicitement voulu
+    "ANN401",   # allow Any when it is explicitly intended
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN"]   # pas d'annotation exigée sur chaque fonction de test
+"tests/**" = ["ANN"]   # no annotation required on every test function
 
-# --- Mypy : typage strict ---------------------------------------------------
+# --- Mypy: strict typing ----------------------------------------------------
 [tool.mypy]
 python_version = "3.12"
-strict = true              # active d'un coup une douzaine de vérifications
-warn_unreachable = true    # signale le code mort
-show_error_codes = true    # affiche le code de l'erreur, utile pour cibler un ignore
-# plugins = ["pydantic.mypy"]   # à décommenter quand Pydantic sera installé
+strict = true              # enables a dozen checks at once
+warn_unreachable = true    # reports dead code
+show_error_codes = true    # shows error codes, needed to target an ignore
+plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
-disallow_untyped_defs = false   # tolérance sur les tests, pas sur le code métier
+disallow_untyped_defs = false   # leniency for tests, not for application code
 
 # --- Pytest -----------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers --strict-config --import-mode=importlib"
 markers = [
-    "integration: test nécessitant des services réels (Postgres, stockage objet)",
+    "integration: test requiring real services (Postgres, object storage)",
 ]

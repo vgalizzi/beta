@@ -5,12 +5,12 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-yaml
-      - id: check-added-large-files    # empêche de committer une vidéo par accident
+      - id: check-added-large-files    # prevents committing a video by accident
       - id: detect-private-key
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.1
     hooks:
-      - id: ruff-check                 # le linter ; s'appelait « ruff » dans les anciennes versions
+      - id: ruff-check                 # the linter; named "ruff" in older versions
         args: [--fix]
       - id: ruff-format
