@@ -7,7 +7,9 @@ authors = [
     { name = "Victor Galizzi", email = "victor.galizzi@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "boto3>=1.43.116",
+]
 
 [project.scripts]
 
