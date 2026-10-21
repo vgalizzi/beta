@@ -17,10 +17,14 @@ services:
       start_period: 20s
     restart: unless-stopped
 
-  valkey:
+  broker:
     image: valkey/valkey:9
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]   # no persistence: see ADR 0003
+    ports:
+      - "127.0.0.1:6379:6379"
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli PING"]
+      # valkey-cli exits 0 even when the server replies with an error: require PONG
+      test: ["CMD-SHELL", "[ \"$$(valkey-cli PING)\" = PONG ]"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -58,7 +62,7 @@ services:
       storage:
         condition: service_healthy
     volumes:
-      - ./docker/init-bucket:/script:ro          # bind mount : un dossier de l'hôte, en lecture seule
+      - ./docker/init-bucket:/script:ro          # bind mount: a host directory, read-only
       - bucket-init-cache-uv:/root/.cache/uv
     restart: no
 

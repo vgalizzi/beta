@@ -11,14 +11,14 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-# Un seul canal : tout passe par logging, donc par stderr, sans tampon.
+# A single channel: everything goes through logging, hence to stderr, unbuffered.
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("bucket-init")
 
 REQUIRED_VARS = ("STORAGE_URL", "BUCKET_NAME", "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY")
 
-# Compose remplace une variable absente du .env par une chaîne vide :
-# une valeur vide compte donc comme manquante.
+# Compose replaces a variable missing from .env with an empty string,
+# so an empty value counts as missing.
 missing = [name for name in REQUIRED_VARS if not os.environ.get(name)]
 if missing:
     logger.error("Missing environment variables: %s", ", ".join(missing))
@@ -37,7 +37,7 @@ try:
     s3_client.head_bucket(Bucket=bucket_name)
     logger.info("Bucket %r already exists", bucket_name)
 except ClientError as e:
-    # Seul un 404 signifie « absent ». Un 403 vient presque toujours des identifiants.
+    # Only a 404 means "absent". A 403 almost always comes from the credentials.
     if e.response["Error"]["Code"] != "404":
         logger.error("Could not check bucket %r: %s", bucket_name, e)
         sys.exit(1)
