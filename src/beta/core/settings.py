@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         # Built on demand so the password never appears in the settings repr.
         # build() does not percent-encode: "@", ":" or "/" in a password would break the URL.
         return PostgresDsn.build(
-            scheme="postgresql",
+            scheme="postgresql+asyncpg",
             username=quote(self.postgres_user, safe=""),
             password=quote(self.postgres_password.get_secret_value(), safe=""),
             host=self.postgres_host,
