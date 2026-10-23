@@ -141,7 +141,7 @@ def test_settings_are_immutable() -> None:
 def test_database_url_is_built_from_components() -> None:
     url = get_settings().database_url
 
-    assert str(url) == "postgresql://beta:test-db-password@localhost:5433/beta"
+    assert str(url) == "postgresql+asyncpg://beta:test-db-password@localhost:5433/beta"
 
 
 @pytest.mark.usefixtures("valid_env")
@@ -154,7 +154,7 @@ def test_database_url_encodes_special_characters_in_password(
 
     url = get_settings().database_url
 
-    assert str(url) == "postgresql://beta:p%40ss%3Aw%2Frd@localhost:5433/beta"
+    assert str(url) == "postgresql+asyncpg://beta:p%40ss%3Aw%2Frd@localhost:5433/beta"
 
 
 @pytest.mark.usefixtures("valid_env")

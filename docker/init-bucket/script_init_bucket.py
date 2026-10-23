@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("bucket-init")
 
-REQUIRED_VARS = ("STORAGE_URL", "BUCKET_NAME", "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY")
+REQUIRED_VARS = ("STORAGE_URL_INTERNAL", "BUCKET_NAME", "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY")
 
 # Compose replaces a variable missing from .env with an empty string,
 # so an empty value counts as missing.
@@ -27,7 +27,7 @@ if missing:
 bucket_name = os.environ["BUCKET_NAME"]
 s3_client = boto3.client(
     "s3",
-    endpoint_url=os.environ["STORAGE_URL"],
+    endpoint_url=os.environ["STORAGE_URL_INTERNAL"],
     aws_access_key_id=os.environ["STORAGE_ACCESS_KEY"],
     aws_secret_access_key=os.environ["STORAGE_SECRET_KEY"],
     config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
