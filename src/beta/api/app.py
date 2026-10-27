@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from beta.api.schemas import DependencyState, HealthStatus
+from beta.core.logging_config import configure_logging
 from beta.core.settings import get_settings
 
 if TYPE_CHECKING:
@@ -29,6 +30,7 @@ CHECK_TIMEOUT_SECONDS = 1.5
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
+    configure_logging(settings.log_level)
     app.state.broker_client = Redis.from_url(
         str(settings.broker_url), socket_connect_timeout=1, socket_timeout=1
     )
