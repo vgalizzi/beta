@@ -85,6 +85,7 @@ def test_missing_required_variable_is_rejected(
         ("BROKER_URL", "http://localhost:6379/0"),  # RedisDsn rejects any other scheme
         ("STORAGE_URL_INTERNAL", "not a url"),  # AnyUrl rejects anything that is not a URL
         ("POSTGRES_PORT", "abc"),  # int rejects a non-numeric string
+        ("LOG_LEVEL", "verbose"),  # Literal rejects anything outside the listed levels
     ],
 )
 def test_malformed_value_is_rejected(
@@ -155,6 +156,12 @@ def test_database_url_encodes_special_characters_in_password(
     url = get_settings().database_url
 
     assert str(url) == "postgresql+asyncpg://beta:p%40ss%3Aw%2Frd@localhost:5433/beta"
+
+
+@pytest.mark.usefixtures("valid_env")
+def test_log_level_is_optional_and_defaults_to_info() -> None:
+    # VALID_ENV has no LOG_LEVEL: a missing level must not prevent the API from starting.
+    assert get_settings().log_level == "INFO"
 
 
 @pytest.mark.usefixtures("valid_env")

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 from urllib.parse import quote
 
 from pydantic import AnyUrl, PostgresDsn, RedisDsn, SecretStr
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     postgres_port: int
     broker_url: RedisDsn
     bucket_name: str
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     @property
     def database_url(self) -> PostgresDsn:
