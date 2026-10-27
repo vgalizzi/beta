@@ -52,7 +52,7 @@ services:
   bucket-init:
     image: ghcr.io/astral-sh/uv:0.13.4-python3.12-trixie-slim
     environment:
-      STORAGE_URL_INTERNAL: ${STORAGE_URL_INTERNAL}
+      STORAGE_URL_INTERNAL: http://storage:8333
       UV_CACHE_DIR: /root/.cache/uv
       BUCKET_NAME: ${BUCKET_NAME}
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
@@ -81,7 +81,7 @@ services:
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
       STORAGE_URL_INTERNAL: http://storage:8333
-      STORAGE_URL_PUBLIC: http://localhost:833
+      STORAGE_URL_PUBLIC: http://localhost:8333
       BUCKET_NAME: ${BUCKET_NAME}
     ports:
       - "127.0.0.1:8000:8000"
@@ -115,7 +115,7 @@ services:
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
       STORAGE_URL_INTERNAL: http://storage:8333
-      STORAGE_URL_PUBLIC: http://localhost:833
+      STORAGE_URL_PUBLIC: http://localhost:8333
       BUCKET_NAME: ${BUCKET_NAME}
     depends_on:
       postgres:
