@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import boto3
 from botocore.config import Config
 from fastapi import FastAPI, Request, Response
+from prometheus_fastapi_instrumentator import Instrumentator
 from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -64,6 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="Beta", lifespan=lifespan)
+Instrumentator(excluded_handlers=["/health", "/metrics"]).instrument(app).expose(app)
 
 
 async def broker_health_check(broker_client: Redis) -> DependencyState:
