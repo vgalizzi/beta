@@ -245,7 +245,7 @@ Each phase is a valid stopping point. After phase 2, the project is already comp
 
 Everything runs on Linux. The reference setup is Windows 11 with WSL2 and Ubuntu 24.04, because that is the machine the project is developed on. On a native Linux machine, skip the WSL step; the rest is identical.
 
-The steps below install a development environment. Running the application stack with `docker compose up` comes with phase 0 and will be documented here.
+Steps 1 to 6 install a development environment. Step 7 runs the application stack with Docker Compose.
 
 ### Prerequisites
 
@@ -343,7 +343,50 @@ uv run pytest -m "not integration"
 docker run --rm hello-world        # without sudo
 ```
 
-All four must pass.
+All four must pass. `uv run pytest` without the marker filter also runs the integration tests, which start their own Postgres, Valkey and SeaweedFS containers and need Docker.
+
+### 7. Run the stack
+
+```bash
+docker compose up -d --build
+docker compose ps                  # wait until api is (healthy)
+curl -i localhost:8000/health      # 200 and "status": "ok"
+```
+
+The first start pulls the images and builds the API image, which takes a few minutes. Later starts take a few seconds.
+
+| Service | Role | From the host |
+|---|---|---|
+| `postgres` | PostgreSQL 18, application database, named volume | `localhost:5433` |
+| `broker` | Valkey, Celery broker, in memory only ([ADR 0003](docs/decisions/0003-persistance-du-broker.md)) | `localhost:6379` |
+| `storage` | SeaweedFS, S3-compatible object storage, named volume ([ADR 0002](docs/decisions/0002-stockage-objet.md)) | `localhost:8333` |
+| `bucket-init` | Creates the bucket if it does not exist, then exits with code 0 | — |
+| `api` | FastAPI application | `localhost:8000` |
+| `worker` | Celery worker | — |
+
+Ports are published on `127.0.0.1` only. Services start in dependency order: the API waits until the database, the broker and the storage report healthy.
+
+The API exposes:
+
+- `GET /health`: 200 when the database, the broker and the storage all answer, 503 as soon as one does not, with the state of each dependency in the body ([ADR 0004](docs/decisions/0004-semantique-de-health.md));
+- `GET /metrics`: request counts, latencies and process metrics in the Prometheus text format;
+- `GET /docs`: the interactive OpenAPI documentation.
+
+The addresses in `.env` are the ones seen from the host (`localhost:5433`…). Inside the stack, Compose passes the services' in-network addresses itself (`postgres:5432`…), so `.env` does not need to change between the two. It is what makes the API runnable outside Docker against the same services, which is faster while developing:
+
+```bash
+docker compose up -d postgres broker storage bucket-init
+uv run uvicorn beta.api.app:app --reload --port 8001
+```
+
+To stop:
+
+```bash
+docker compose down        # stops and removes the containers, keeps the data
+docker compose down -v     # also deletes the volumes: database and stored objects are lost
+```
+
+`bucket-init` is a one-shot service: `docker compose ps` no longer lists it once it has exited. `docker compose ps -a` shows its exit code, and `docker compose logs bucket-init` its output.
 
 ### Troubleshooting
 
@@ -358,6 +401,9 @@ All four must pass.
 | Installs and tests are abnormally slow | The repository is under `/mnt/` |
 | Git reports every file as modified, mode `100755` | Files copied from a Windows drive with their permissions: use `cp --no-preserve=mode` |
 | `/bin/sh^M: bad interpreter` | Windows line endings: `.gitattributes` enforces LF, run `git add --renormalize .` |
+| `docker compose up` fails with `port is already allocated` | Another process or another Compose project already uses 5433, 6379, 8333 or 8000 |
+| `api` stays `(unhealthy)` | `curl localhost:8000/health` names the failing dependency, and `docker compose logs api` gives the cause |
+| `/health` reports `storage` down while the storage is healthy | The bucket does not exist: check `docker compose ps -a` for the exit code of `bucket-init` |
 
 ## References
 

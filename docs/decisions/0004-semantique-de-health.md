@@ -30,7 +30,7 @@ Aucune des trois dépendances n'est accessoire :
 
 **Le corps ne contient aucun message d'erreur.** La cause d'un échec (exception, délai dépassé) est journalisée côté serveur, pas renvoyée : l'endpoint n'est pas authentifié, et un message d'exception révèle des noms d'hôtes, des ports ou des versions.
 
-**Les vérifications sont minimales et bornées dans le temps** : `PING` au broker, `SELECT 1` à la base, `head_bucket` sur le bucket de l'application. Chacune a un délai maximal explicite, et les trois s'exécutent en parallèle, de sorte que la réponse arrive avant le délai du healthcheck Docker (3 secondes), même quand toutes les dépendances sont figées.
+**Les vérifications sont minimales et bornées dans le temps** : `PING` au broker, `SELECT 1` à la base, `head_bucket` sur le bucket de l'application. Chacune a un délai maximal explicite, et les trois s'exécutent en parallèle, de sorte que la réponse arrive avant le délai du healthcheck Docker, même quand toutes les dépendances sont figées. Ce délai est de 2 secondes : la commande du healthcheck appelle `/health` avec un délai de 2 s, plus court que les 3 s que Docker accorde à la commande entière. Le délai de chaque vérification est posé par le code de l'API autour de la vérification, pas seulement confié au client de la dépendance : les délais des clients ne couvrent pas toutes les étapes d'un appel, la résolution du nom de l'hôte en particulier.
 
 **Le résultat n'est pas mis en cache** : chaque appel interroge les trois services.
 
